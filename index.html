@@ -1,84 +1,152 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="fa">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ربات خودکار</title>
+    <title>اتوماسیون سایت</title>
     <style>
-        body { font-family: Arial; background: #667eea; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
-        h1 { text-align: center; color: #333; }
-        input, textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
-        button { width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
-        .btn-save { background: #667eea; color: white; }
-        .btn-start { background: #4CAF50; color: white; }
-        .btn-stop { background: #f44336; color: white; }
-        button:hover { opacity: 0.9; }
-        .status { margin-top: 20px; padding: 10px; border-radius: 5px; display: none; text-align: center; }
+        body {
+            font-family: 'Tahoma', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🤖 ربات خودکار</h1>
-        
-        <label>آدرس سایت *</label>
-        <input type="url" id="siteUrl" placeholder="https://example.com">
-        
-        <label>نام کاربری *</label>
-        <input type="text" id="username">
-        
-        <label>رمز عبور *</label>
-        <input type="password" id="password">
-        
-        <label>توضیحات *</label>
-        <textarea id="description" placeholder="متن توضیحی"></textarea>
-        
-        <button class="btn-save" onclick="saveConfig()">💾 ذخیره</button>
-        <button class="btn-start" onclick="startAuto()">▶️ شروع</button>
-        <button class="btn-stop" onclick="stopAuto()">⏹️ توقف</button>
-        
-        <div id="status" class="status"></div>
+        <h1>🤖 اتوماسیون سایت</h1>
+        <form id="automationForm">
+            <div class="form-group">
+                <label>فشار (Pressure):</label>
+                <input type="number" id="pressure" name="pressure" required>
+            </div>
+            <div class="form-group">
+                <label>دمای (Temperature):</label>
+                <input type="number" id="temperature" name="temperature" required>
+            </div>
+            <div class="form-group">
+                <label>توضیح:</label>
+                <textarea id="description" name="description" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>تاریخ و ساعت:</label>
+                <input type="datetime-local" id="date" name="date" required>
+            </div>
+            <button type="submit">🚀 اجرا</button>
+        </form>
+        <div id="status"></div>
     </div>
-    
+
     <script>
-        function saveConfig() {
-            fetch('/api/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    site_url: document.getElementById('siteUrl').value,
-                    username: document.getElementById('username').value,
-                    password: document.getElementById('password').value,
-                    description: document.getElementById('description').value,
-                    parameters: {}
-                })
-            })
-            .then(r => r.json())
-            .then(d => showStatus(d.message, 'success'))
-            .catch(e => showStatus('❌ خطا', 'error'));
-        }
-        
-        function startAuto() {
-            fetch('/api/start', { method: 'POST' })
-            .then(r => r.json())
-            .then(d => showStatus(d.message, 'success'))
-            .catch(e => showStatus('❌ خطا', 'error'));
-        }
-        
-        function stopAuto() {
-            fetch('/api/stop', { method: 'POST' })
-            .then(r => r.json())
-            .then(d => showStatus(d.message, 'success'))
-            .catch(e => showStatus('❌ خطا', 'error'));
-        }
-        
-        function showStatus(msg, type) {
-            let s = document.getElementById('status');
-            s.textContent = msg;
-            s.style.display = 'block';
-            s.style.background = type === 'success' ? '#d4edda' : '#f8d7da';
-            s.style.color = type === 'success' ? '#155724' : '#721c24';
-        }
+        document.getElementById('automationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const pressure = document.getElementById('pressure').value;
+            const temperature = document.getElementById('temperature').value;
+            const description = document.getElementById('description').value;
+            const date = document.getElementById('date').value;
+            
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = '';
+            statusDiv.textContent = '⏳ در حال اجرا...';
+            statusDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch('/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pressure,
+                        temperature,
+                        description,
+                        date
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.className = 'success';
+                    statusDiv.textContent = '✅ ' + data.message;
+                } else {
+                    statusDiv.className = 'error';
+                    statusDiv.textContent = '❌ ' + data.message;
+                }
+            } catch (error) {
+                statusDiv.className = 'error';
+                statusDiv.textContent = '❌ خطا: ' + error.message;
+            }
+        });
     </script>
 </body>
 </html>
