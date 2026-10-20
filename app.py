@@ -22,7 +22,7 @@ user_data = {
 def submit_to_website():
     try:
         # ✅ پروکسی شما
-        proxy_url = 'http://81.90.158.110:3128'
+        proxy_url = 'http://185.100.47.106:443'
         
         proxies = {
             'http': proxy_url,
