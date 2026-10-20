@@ -1,6 +1,0 @@
-<html>
-<style>
-   div{min-height:1em;}
-</style>
-<body>web: gunicorn app:app<br/></body>
-</html>
