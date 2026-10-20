@@ -1,6 +1,6 @@
-Flask==2.3.3
-selenium==4.11.2
-APScheduler==3.10.4
-python-dotenv==1.0.0
-gunicorn==21.2.0
-webdriver-manager==4.0.1
+Flask
+requests
+python-dotenv
+APScheduler
+urllib3
+PySocks
