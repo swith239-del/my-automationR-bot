@@ -1,8 +1,12 @@
 from flask import Flask, render_template, request, jsonify
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.ssl_ import create_urllib3_context
 import os
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
+import socks
+import socket
 
 load_dotenv()
 
@@ -19,20 +23,26 @@ user_data = {
     'job_id': None
 }
 
+# ✅ SOCKS5 تنظیمات
+def setup_socks_proxy():
+    """SOCKS5 را تنظیم کن"""
+    socks.set_default_proxy(
+        socks.SOCKS5,
+        "22.212.197.248",  # IP
+        12334,              # Port
+        rdns=True
+    )
+    socket.socket = socks.socksocket
+
 def submit_to_website():
     try:
-        # ✅ پروکسی شما
-        proxy_url = 'https://api.ipmyp.ir/json/8.8.8.8'
-        
-        proxies = {
-            'http': proxy_url,
-            'https': proxy_url
-        }
+        # ✅ SOCKS5 را فعال کن
+        setup_socks_proxy()
         
         # ✅ درخواست ارسال کن
         payload = {
-            'username': user_data[''],
-            'password': user_data[''],
+            'username': user_data['username'],
+            'password': user_data['password'],
             'description': user_data['description'],
             **user_data.get('parameters', {})
         }
@@ -43,7 +53,6 @@ def submit_to_website():
             user_data['api_url'],
             json=payload,
             headers=headers,
-            proxies=proxies,  # ✅ پروکسی استفاده شد
             timeout=15,
             verify=False  # SSL را نادیده بگیر
         )
