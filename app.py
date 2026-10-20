@@ -22,7 +22,7 @@ user_data = {
 def submit_to_website():
     try:
         # ✅ پروکسی شما
-        proxy_url = ''
+        proxy_url = 'https://api.ipmyp.ir/json/8.8.8.8'
         
         proxies = {
             'http': proxy_url,
