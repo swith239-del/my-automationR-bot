@@ -81,9 +81,9 @@ def save_config():
     global user_data
     data = request.json
     
-    user_data['site_url'] = data.get('site_url', '')
-    user_data['username'] = data.get('username', '')
-    user_data['password'] = data.get('password', '')
+    user_data['site_url'] = data.get('https://elog.pedc.ir/DataHistory/IndexWell', '')
+    user_data['username'] = data.get('username', 'R.babaei')
+    user_data['password'] = data.get('password', 'R@46')
     user_data['description'] = data.get('description', '')
     user_data['parameters'] = data.get('parameters', {})
     
