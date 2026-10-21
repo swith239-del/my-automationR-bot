@@ -3,150 +3,280 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>اتوماسیون سایت</title>
+    <title>خودکارسازی ارسال داده</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'Tahoma', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
-            justify-content: center;
             align-items: center;
-            margin: 0;
+            justify-content: center;
+            padding: 20px;
         }
+        
         .container {
             background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            max-width: 500px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
             width: 100%;
+            padding: 40px;
         }
+        
         h1 {
-            text-align: center;
             color: #333;
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 30px;
         }
+        
+        /* ===== صفحه ورود ===== */
+        #loginPage {
+            display: block;
+        }
+        
+        #dashboardPage {
+            display: none;
+        }
+        
         .form-group {
             margin-bottom: 20px;
         }
+        
         label {
             display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: bold;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
             font-size: 14px;
-            box-sizing: border-box;
         }
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-        button {
+        
+        input, select {
             width: 100%;
             padding: 12px;
-            background: #667eea;
-            color: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        button {
+            padding: 12px 20px;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            font-weight: bold;
+            transition: all 0.3s ease;
+            color: white;
+            width: 100%;
         }
-        button:hover {
-            background: #764ba2;
+        
+        .btn-primary {
+            background: #667eea;
+            margin-bottom: 15px;
         }
-        #status {
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-success {
+            background: #48bb78;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .btn-info {
+            background: #4299e1;
+        }
+        
+        .btn-info:hover {
+            background: #3182ce;
+        }
+        
+        .btn-logout {
+            background: #a0aec0;
             margin-top: 20px;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
+        }
+        
+        .btn-logout:hover {
+            background: #718096;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 480px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
             display: none;
         }
-        .success {
-            background: #d4edda;
-            color: #155724;
+        
+        .message.show {
             display: block;
         }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            display: block;
+        
+        .message.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .message.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        
+        .message.info {
+            background: #bee3f8;
+            color: #2c5282;
+            border: 1px solid #90cdf4;
+        }
+        
+        .status-box {
+            background: #f8f9fa;
+            border-right: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .status-item strong {
+            color: #333;
+        }
+        
+        .status-item span {
+            color: #666;
+        }
+        
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #48bb78;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        
+        .welcome-text {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #2d3748;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🤖 اتوماسیون سایت</h1>
-        <form id="automationForm">
-            <div class="form-group">
-                <label>فشار (Pressure):</label>
-                <input type="number" id="pressure" name="pressure" required>
-            </div>
-            <div class="form-group">
-                <label>دمای (Temperature):</label>
-                <input type="number" id="temperature" name="temperature" required>
-            </div>
-            <div class="form-group">
-                <label>توضیح:</label>
-                <textarea id="description" name="description" required></textarea>
-            </div>
-            <div class="form-group">
-                <label>تاریخ و ساعت:</label>
-                <input type="datetime-local" id="date" name="date" required>
-            </div>
-            <button type="submit">🚀 اجرا</button>
-        </form>
-        <div id="status"></div>
-    </div>
-
-    <script>
-        document.getElementById('automationForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        <!-- صفحه ورود -->
+        <div id="loginPage">
+            <h1>🔐 ورود به سیستم</h1>
             
-            const pressure = document.getElementById('pressure').value;
-            const temperature = document.getElementById('temperature').value;
-            const description = document.getElementById('description').value;
-            const date = document.getElementById('date').value;
+            <div id="loginMessage" class="message"></div>
             
-            const statusDiv = document.getElementById('status');
-            statusDiv.className = '';
-            statusDiv.textContent = '⏳ در حال اجرا...';
-            statusDiv.style.display = 'block';
+            <div class="form-group">
+                <label for="username">نام کاربری</label>
+                <input type="text" id="username" placeholder="نام کاربری خود را وارد کنید">
+            </div>
             
-            try {
-                const response = await fetch('/run', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        pressure,
-                        temperature,
-                        description,
-                        date
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    statusDiv.className = 'success';
-                    statusDiv.textContent = '✅ ' + data.message;
-                } else {
-                    statusDiv.className = 'error';
-                    statusDiv.textContent = '❌ ' + data.message;
-                }
-            } catch (error) {
-                statusDiv.className = 'error';
-                statusDiv.textContent = '❌ خطا: ' + error.message;
-            }
-        });
-    </script>
-</body>
-</html>
+            <div class="form-group">
+                <label for="password">رمز عبور</label>
+                <input type="password" id="password" placeholder="رمز عبور خود را وارد کنید">
+            </div>
+            
+            <button class="btn-primary" onclick="handleLogin()">ورود</button>
+        </div>
+        
+        <!-- صفحه داشبورد -->
+        <div id="dashboardPage">
+            <h1>🤖 خودکارسازی ارسال
