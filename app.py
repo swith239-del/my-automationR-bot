@@ -1,256 +1,288 @@
-from flask import Flask, render_template, request, jsonify, session
-from apscheduler.schedulers.background import BackgroundScheduler
-import requests
-from dotenv import load_dotenv
 import os
+from flask import Flask, render_template, request, jsonify, session
 from datetime import datetime
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from functools import wraps
+from apscheduler.schedulers.background import BackgroundScheduler
+import logging
+from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+# Global scheduler
 scheduler = BackgroundScheduler()
 scheduler.start()
+active_jobs = {}
 
-# ذخیره وضعیت هر کاربر
-user_sessions = {}
+# Proxy configuration
+PROXY_CONFIG = {
+    'type': 'socks5',
+    'ip': '22.212.197.248',
+    'port': 12334,
+    'auth': None
+}
 
 TARGET_URL = 'https://elog.pedc.ir/api/submit'
 
-def submit_data(username, password):
-    """ارسال داده با اطلاعات کاربر"""
+def get_session_with_retry():
+    """Create requests session with retry strategy"""
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["HEAD", "GET", "OPTIONS", "POST"]
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+def get_proxy_url():
+    """Build proxy URL from config"""
+    proxy_type = PROXY_CONFIG['type']
+    ip = PROXY_CONFIG['ip']
+    port = PROXY_CONFIG['port']
+    
+    if PROXY_CONFIG['auth']:
+        return f"{proxy_type}://{PROXY_CONFIG['auth']}@{ip}:{port}"
+    return f"{proxy_type}://{ip}:{port}"
+
+def require_login(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session:
+            return jsonify({'error': 'Not authenticated'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/')
+def index():
+    """Serve main dashboard"""
     try:
+        return render_template('index.html')
+    except Exception as e:
+        logger.error(f"Error serving index.html: {e}")
+        return f"<h1>Error</h1><p>Cannot load dashboard: {str(e)}</p>", 500
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """Login endpoint"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not username or not password:
+            return jsonify({'success': False, 'message': 'Invalid credentials'}), 400
+        
+        # Store in session
+        session['user'] = {
+            'username': username,
+            'password': password,
+            'login_time': datetime.now().isoformat()
+        }
+        
+        logger.info(f"User {username} logged in")
+        return jsonify({'success': True, 'message': 'Logged in successfully'})
+    
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/submit', methods=['POST'])
+@require_login
+def api_submit():
+    """Submit data to ELOG"""
+    try:
+        data = request.get_json()
+        username = session['user']['username']
+        password = session['user']['password']
+        
+        # Prepare payload
         payload = {
             'username': username,
             'password': password,
-            'data': 'test_data'
+            'data': data
         }
         
-        response = requests.post(
+        # Get session with retry
+        req_session = get_session_with_retry()
+        
+        # Use proxy
+        proxy_url = get_proxy_url()
+        proxies = {'http': proxy_url, 'https': proxy_url}
+        
+        # Make request
+        response = req_session.post(
             TARGET_URL,
             json=payload,
+            proxies=proxies,
+            verify=False,
+            timeout=10
+        )
+        
+        logger.info(f"Submission response: {response.status_code}")
+        
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'Data submitted successfully'})
+        else:
+            return jsonify({'success': False, 'message': f'Server error: {response.status_code}'}), response.status_code
+    
+    except Exception as e:
+        logger.error(f"Submission error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/test-connection', methods=['GET'])
+@require_login
+def test_connection():
+    """Test connection to ELOG"""
+    try:
+        req_session = get_session_with_retry()
+        proxy_url = get_proxy_url()
+        proxies = {'http': proxy_url, 'https': proxy_url}
+        
+        response = req_session.get(
+            'https://elog.pedc.ir',
+            proxies=proxies,
             verify=False,
             timeout=10
         )
         
         if response.status_code == 200:
-            return {
+            return jsonify({
                 'success': True,
-                'message': f'✅ ارسال موفق: {response.status_code}',
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            }
+                'connected': True,
+                'status': 'Connected',
+                'timestamp': datetime.now().isoformat()
+            })
         else:
-            return {
-                'success': False,
-                'message': f'⚠️ خطا: {response.status_code}',
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            }
-            
+            return jsonify({
+                'success': True,
+                'connected': False,
+                'status': f'HTTP {response.status_code}',
+                'timestamp': datetime.now().isoformat()
+            })
+    
     except Exception as e:
-        return {
-            'success': False,
-            'message': f'❌ خطا: {str(e)}',
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-
-@app.route('/')
-def index():
-    """صفحه ورود"""
-    return render_template('index.html')
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    """ورود کاربر"""
-    data = request.get_json()
-    username = data.get('username', '').strip()
-    password = data.get('password', '').strip()
-    
-    if not username or not password:
+        logger.error(f"Connection test error: {e}")
         return jsonify({
             'success': False,
-            'message': 'نام کاربری و رمز عبور الزامی است'
-        }), 400
-    
-    # ذخیره در session
-    session['username'] = username
-    session['password'] = password
-    session['logged_in'] = True
-    
-    return jsonify({
-        'success': True,
-        'message': f'خوش آمدید {username}!'
-    })
+            'connected': False,
+            'status': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
 
-@app.route('/api/dashboard')
-def dashboard():
-    """بررسی ورود"""
-    if not session.get('logged_in'):
-        return jsonify({
-            'success': False,
-            'message': 'ابتدا وارد شوید'
-        }), 401
-    
-    username = session.get('username')
-    
-    # دریافت وضعیت کاربر
-    user_data = user_sessions.get(username, {
-        'enabled': False,
-        'last_run': None,
-        'interval': 60,
-        'message': 'خودکارسازی غیرفعال است'
-    })
-    
-    return jsonify({
-        'success': True,
-        'username': username,
-        'status': user_data
-    })
-
-@app.route('/api/status', methods=['GET'])
-def get_status():
-    """دریافت وضعیت"""
-    if not session.get('logged_in'):
-        return jsonify({'success': False}), 401
-    
-    username = session.get('username')
-    status = user_sessions.get(username, {
-        'enabled': False,
-        'last_run': None,
-        'message': 'خودکارسازی غیرفعال است'
-    })
-    
-    return jsonify(status)
-
-@app.route('/api/submit', methods=['POST'])
-def submit_manual():
-    """ارسال دستی"""
-    if not session.get('logged_in'):
-        return jsonify({'success': False, 'message': 'ابتدا وارد شوید'}), 401
-    
-    username = session.get('username')
-    password = session.get('password')
-    
-    result = submit_data(username, password)
-    
-    # ذخیره نتیجه
-    if username not in user_sessions:
-        user_sessions[username] = {}
-    
-    user_sessions[username]['last_run'] = result['timestamp']
-    user_sessions[username]['message'] = result['message']
-    
-    return jsonify({
-        'success': result['success'],
-        'message': result['message'],
-        'status': user_sessions[username]
-    })
-
-@app.route('/api/schedule', methods=['POST'])
-def set_schedule():
-    """تنظیم خودکارسازی"""
-    if not session.get('logged_in'):
-        return jsonify({'success': False}), 401
-    
-    data = request.get_json()
-    username = session.get('username')
-    password = session.get('password')
-    interval = data.get('interval', 60)
-    enabled = data.get('enabled', False)
-    
-    if username not in user_sessions:
-        user_sessions[username] = {}
-    
-    user_sessions[username]['enabled'] = enabled
-    user_sessions[username]['interval'] = interval
-    
-    if enabled:
-        # حذف job قدیمی اگر وجود دارد
-        job_id = f'job_{username}'
-        try:
-            scheduler.remove_job(job_id)
-        except:
-            pass
+@app.route('/api/schedule/start', methods=['POST'])
+@require_login
+def start_schedule():
+    """Start scheduled submissions"""
+    try:
+        data = request.get_json()
+        interval = int(data.get('interval', 60))
+        submit_data = data.get('data', {})
+        job_id = f"job_{datetime.now().timestamp()}"
         
-        # اضافه کردن job جدید
-        def scheduled_submit():
-            result = submit_data(username, password)
-            user_sessions[username]['last_run'] = result['timestamp']
-            user_sessions[username]['message'] = result['message']
+        def scheduled_task():
+            # Create a request context
+            with app.app_context():
+                try:
+                    req_session = get_session_with_retry()
+                    proxy_url = get_proxy_url()
+                    proxies = {'http': proxy_url, 'https': proxy_url}
+                    
+                    payload = {
+                        'username': session['user']['username'],
+                        'password': session['user']['password'],
+                        'data': submit_data
+                    }
+                    
+                    req_session.post(
+                        TARGET_URL,
+                        json=payload,
+                        proxies=proxies,
+                        verify=False,
+                        timeout=10
+                    )
+                    logger.info(f"Scheduled task executed: {job_id}")
+                except Exception as e:
+                    logger.error(f"Scheduled task error: {e}")
         
+        # Schedule job
         scheduler.add_job(
-            scheduled_submit,
+            scheduled_task,
             'interval',
             minutes=interval,
             id=job_id
         )
         
-        user_sessions[username]['message'] = f'✅ خودکار هر {interval} دقیقه'
-    else:
-        # حذف job
-        job_id = f'job_{username}'
-        try:
-            scheduler.remove_job(job_id)
-        except:
-            pass
-        
-        user_sessions[username]['message'] = 'خودکارسازی غیرفعال است'
-    
-    return jsonify({
-        'success': True,
-        'status': user_sessions[username]
-    })
-
-@app.route('/api/test', methods=['POST'])
-def test_connection():
-    """تست اتصال"""
-    if not session.get('logged_in'):
-        return jsonify({'success': False}), 401
-    
-    username = session.get('username')
-    password = session.get('password')
-    
-    try:
-        # تست ورود
-        payload = {
-            'username': username,
-            'password': password
+        active_jobs[job_id] = {
+            'interval': interval,
+            'started': datetime.now().isoformat(),
+            'data': submit_data
         }
         
-        response = requests.post(
-            TARGET_URL,
-            json=payload,
-            verify=False,
-            timeout=5
-        )
-        
-        return jsonify({
-            'success': True,
-            'message': f'✅ اتصال موفق! (کد: {response.status_code})',
-            'status_code': response.status_code
-        })
+        return jsonify({'success': True, 'job_id': job_id, 'message': 'Schedule started'})
+    
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': f'❌ خطا در اتصال: {str(e)}'
-        }), 500
+        logger.error(f"Schedule start error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/schedule/stop/<job_id>', methods=['POST'])
+@require_login
+def stop_schedule(job_id):
+    """Stop scheduled submission"""
+    try:
+        scheduler.remove_job(job_id)
+        if job_id in active_jobs:
+            del active_jobs[job_id]
+        
+        return jsonify({'success': True, 'message': 'Schedule stopped'})
+    
+    except Exception as e:
+        logger.error(f"Schedule stop error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/schedule/list', methods=['GET'])
+@require_login
+def list_schedules():
+    """List active schedules"""
+    return jsonify({'jobs': active_jobs})
+
+@app.route('/api/proxy/update', methods=['POST'])
+@require_login
+def update_proxy():
+    """Update proxy configuration"""
+    try:
+        data = request.get_json()
+        
+        PROXY_CONFIG['type'] = data.get('type', 'socks5')
+        PROXY_CONFIG['ip'] = data.get('ip', '22.212.197.248')
+        PROXY_CONFIG['port'] = int(data.get('port', 12334))
+        PROXY_CONFIG['auth'] = data.get('auth', None)
+        
+        logger.info(f"Proxy config updated")
+        return jsonify({'success': True, 'message': 'Proxy configuration updated'})
+    
+    except Exception as e:
+        logger.error(f"Proxy update error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
-    """خروج"""
-    username = session.get('username')
-    
-    # حذف job
-    if username:
-        job_id = f'job_{username}'
-        try:
-            scheduler.remove_job(job_id)
-        except:
-            pass
-    
+    """Logout user"""
     session.clear()
-    
-    return jsonify({'success': True, 'message': 'با موفقیت خارج شدید'})
+    return jsonify({'success': True, 'message': 'Logged out'})
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
