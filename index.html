@@ -37,14 +37,8 @@
             margin-bottom: 30px;
         }
         
-        /* ===== صفحه ورود ===== */
-        #loginPage {
-            display: block;
-        }
-        
-        #dashboardPage {
-            display: none;
-        }
+        #loginPage { display: block; }
+        #dashboardPage { display: none; }
         
         .form-group {
             margin-bottom: 20px;
@@ -55,7 +49,6 @@
             margin-bottom: 8px;
             color: #333;
             font-weight: 600;
-            font-size: 14px;
         }
         
         input, select {
@@ -64,7 +57,6 @@
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 14px;
-            font-family: inherit;
         }
         
         input:focus, select:focus {
@@ -80,20 +72,17 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
             color: white;
             width: 100%;
+            margin-bottom: 10px;
         }
         
         .btn-primary {
             background: #667eea;
-            margin-bottom: 15px;
         }
         
         .btn-primary:hover {
             background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
         
         .btn-success {
@@ -102,14 +91,6 @@
         
         .btn-success:hover {
             background: #38a169;
-        }
-        
-        .btn-danger {
-            background: #f56565;
-        }
-        
-        .btn-danger:hover {
-            background: #e53e3e;
         }
         
         .btn-info {
@@ -122,7 +103,6 @@
         
         .btn-logout {
             background: #a0aec0;
-            margin-top: 20px;
         }
         
         .btn-logout:hover {
@@ -133,26 +113,18 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        @media (max-width: 480px) {
-            .controls {
-                grid-template-columns: 1fr;
-            }
+            margin-bottom: 20px;
         }
         
         .message {
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
-            font-size: 14px;
             display: none;
+            font-size: 14px;
         }
         
-        .message.show {
-            display: block;
-        }
+        .message.show { display: block; }
         
         .message.success {
             background: #c6f6d5;
@@ -177,7 +149,7 @@
             border-right: 4px solid #667eea;
             padding: 20px;
             border-radius: 8px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         
         .status-item {
@@ -185,14 +157,6 @@
             justify-content: space-between;
             margin: 10px 0;
             font-size: 14px;
-        }
-        
-        .status-item strong {
-            color: #333;
-        }
-        
-        .status-item span {
-            color: #666;
         }
         
         .toggle-switch {
@@ -203,7 +167,6 @@
         
         .switch {
             position: relative;
-            display: inline-block;
             width: 50px;
             height: 26px;
         }
@@ -261,7 +224,6 @@
         <!-- صفحه ورود -->
         <div id="loginPage">
             <h1>🔐 ورود به سیستم</h1>
-            
             <div id="loginMessage" class="message"></div>
             
             <div class="form-group">
@@ -279,4 +241,193 @@
         
         <!-- صفحه داشبورد -->
         <div id="dashboardPage">
-            <h1>🤖 خودکارسازی ارسال
+            <h1>🤖 خودکارسازی ارسال داده</h1>
+            
+            <div class="welcome-text">
+                👋 خوش آمدید <strong id="welcomeUsername"></strong>
+            </div>
+            
+            <div id="dashboardMessage" class="message"></div>
+            
+            <div class="status-box">
+                <div class="status-item">
+                    <strong>وضعیت:</strong>
+                    <span id="status-enabled">❌ غیرفعال</span>
+                </div>
+                <div class="status-item">
+                    <strong>آخرین ارسال:</strong>
+                    <span id="status-last-run">هنوز</span>
+                </div>
+                <div class="status-item">
+                    <strong>پیام:</strong>
+                    <span id="status-message">-</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>فعال/غیرفعال کردن خودکار</label>
+                <div class="toggle-switch">
+                    <label class="switch">
+                        <input type="checkbox" id="enableSwitch" onchange="updateToggleLabel()">
+                        <span class="slider"></span>
+                    </label>
+                    <span id="toggleLabel">❌ غیرفعال</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="interval">فاصله زمانی (دقیقه)</label>
+                <input type="number" id="interval" min="1" max="1440" value="60">
+            </div>
+            
+            <div class="controls">
+                <button class="btn-info" onclick="testConnection()">🧪 تست</button>
+                <button class="btn-success" onclick="submitManual()">📤 ارسال</button>
+                <button class="btn-primary" style="grid-column: span 2;" onclick="saveSchedule()">💾 ذخیره</button>
+            </div>
+            
+            <button class="btn-logout" onclick="handleLogout()">🚪 خروج</button>
+        </div>
+    </div>
+
+    <script>
+        // بررسی ورود
+        window.addEventListener('load', checkLogin);
+        
+        function checkLogin() {
+            fetch('/api/dashboard')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showDashboard(data.username, data.status);
+                    } else {
+                        showLogin();
+                    }
+                })
+                .catch(() => showLogin());
+        }
+        
+        function showLogin() {
+            document.getElementById('loginPage').style.display = 'block';
+            document.getElementById('dashboardPage').style.display = 'none';
+        }
+        
+        function showDashboard(username, status) {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboardPage').style.display = 'block';
+            document.getElementById('welcomeUsername').textContent = username;
+            
+            updateStatus(status);
+        }
+        
+        function showMessage(msg, type, page = 'login') {
+            const msgEl = document.getElementById(page + 'Message');
+            msgEl.textContent = msg;
+            msgEl.className = `message show ${type}`;
+            setTimeout(() => msgEl.classList.remove('show'), 4000);
+        }
+        
+        async function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                showMessage('⚠️ تمام فیلدها الزامی هستند', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    setTimeout(() => checkLogin(), 1000);
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ خطا: ${error.message}`, 'error');
+            }
+        }
+        
+        async function submitManual() {
+            showMessage('📤 درحال ارسال...', 'info', 'dashboard');
+            try {
+                const response = await fetch('/api/submit', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success', 'dashboard');
+                    updateStatus(data.status);
+                } else {
+                    showMessage(data.message || '❌ خطا', 'error', 'dashboard');
+                }
+            } catch (error) {
+                showMessage(`❌ خطا: ${error.message}`, 'error', 'dashboard');
+            }
+        }
+        
+        async function testConnection() {
+            showMessage('🧪 درحال تست...', 'info', 'dashboard');
+            try {
+                const response = await fetch('/api/test', { method: 'POST' });
+                const data = await response.json();
+                
+                showMessage(data.message, data.success ? 'success' : 'error', 'dashboard');
+            } catch (error) {
+                showMessage(`❌ خطا: ${error.message}`, 'error', 'dashboard');
+            }
+        }
+        
+        async function saveSchedule() {
+            const enabled = document.getElementById('enableSwitch').checked;
+            const interval = parseInt(document.getElementById('interval').value);
+            
+            showMessage('💾 درحال ذخیره...', 'info', 'dashboard');
+            try {
+                const response = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled, interval })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('✅ تنظیمات ذخیره شد', 'success', 'dashboard');
+                    updateStatus(data.status);
+                } else {
+                    showMessage('❌ خطا در ذخیره', 'error', 'dashboard');
+                }
+            } catch (error) {
+                showMessage(`❌ خطا: ${error.message}`, 'error', 'dashboard');
+            }
+        }
+        
+        function updateStatus(status) {
+            document.getElementById('status-enabled').textContent = 
+                status.enabled ? '✅ فعال' : '❌ غیرفعال';
+            document.getElementById('status-last-run').textContent = 
+                status.last_run || 'هنوز';
+            document.getElementById('status-message').textContent = 
+                status.message || '-';
+            document.getElementById('enableSwitch').checked = status.enabled;
+            updateToggleLabel();
+        }
+        
+        function updateToggleLabel() {
+            const label = document.getElementById('enableSwitch').checked ? '✅ فعال' : '❌ غیرفعال';
+            document.getElementById('toggleLabel').textContent = label;
+        }
+        
+        async function handleLogout() {
+            await fetch('/api/logout', { method: 'POST' });
+            showLogin();
+        }
+    </script>
+</body>
+</html>
