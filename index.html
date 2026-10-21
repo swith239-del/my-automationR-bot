@@ -1,16 +1,21 @@
+# Complete `templates/index.html` - Copy & Paste Ready
+
+Here's the **complete, production-ready** HTML file. Replace your entire `templates/index.html` with this:
+
+```html
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ELOG Submit Dashboard</title>
+    <title>ELOG Submission Dashboard</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -18,447 +23,488 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            direction: rtl;
+            padding: 20px;
         }
-        
+
         .container {
             background: white;
             border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            width: 90%;
-            max-width: 500px;
-            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            overflow: hidden;
         }
-        
-        .login-form {
-            display: block;
-        }
-        
-        .dashboard {
-            display: none;
-        }
-        
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
             text-align: center;
+        }
+
+        .header h1 {
+            margin-bottom: 5px;
             font-size: 28px;
         }
-        
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-btn:hover {
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
-        
-        label {
+
+        .form-group label {
             display: block;
             margin-bottom: 8px;
-            color: #555;
+            color: #333;
             font-weight: 500;
+            font-size: 14px;
         }
-        
-        input[type="text"],
-        input[type="password"],
-        input[type="email"],
-        textarea,
-        select {
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 14px;
-            font-family: inherit;
-            transition: border-color 0.3s;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: border-color 0.3s ease;
         }
-        
-        input[type="text"]:focus,
-        input[type="password"]:focus,
-        input[type="email"]:focus,
-        textarea:focus,
-        select:focus {
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #667eea;
-            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        
-        textarea {
+
+        .form-group textarea {
             resize: vertical;
             min-height: 100px;
         }
-        
-        button {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .btn {
+            padding: 12px 24px;
             border: none;
             border-radius: 5px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        .message {
-            padding: 12px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            text-align: center;
-            display: none;
-        }
-        
-        .message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
-        
-        .message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-        
-        .message.info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-            display: block;
-        }
-        
-        .logout-btn {
-            background-color: #dc3545;
-            margin-top: 10px;
-        }
-        
-        .logout-btn:hover {
-            box-shadow: 0 5px 20px rgba(220, 53, 69, 0.4);
-        }
-        
-        .user-info {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .user-info p {
-            color: #666;
-            margin: 5px 0;
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #ddd;
-        }
-        
-        .tab-button {
-            padding: 10px 20px;
-            background: none;
-            border: none;
-            border-bottom: 3px solid transparent;
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
-            color: #666;
-            transition: color 0.3s;
-            width: auto;
+            transition: all 0.3s ease;
+            display: inline-block;
         }
-        
-        .tab-button.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
-        
-        .tab-content {
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
             display: none;
         }
-        
-        .tab-content.active {
+
+        .status-message.show {
             display: block;
         }
-        
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status-message.loading {
+            background: #e7f3ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .schedule-info {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .schedule-info h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .schedule-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .schedule-item:last-child {
+            border-bottom: none;
+        }
+
+        .schedule-item strong {
+            color: #333;
+        }
+
+        .schedule-item .time {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-indicator.connected {
+            background: #4caf50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .status-indicator.disconnected {
+            background: #f44336;
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+        }
+
+        .status-indicator.checking {
+            background: #ff9800;
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+        }
+
         .button-group {
             display: flex;
             gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
         }
-        
-        .button-group button {
-            flex: 1;
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: #333;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Login Form -->
-        <div class="login-form" id="loginForm">
-            <h1>ورود به ELOG</h1>
-            <div id="loginMessage" class="message"></div>
-            <div class="form-group">
-                <label for="username">نام کاربری:</label>
-                <input type="text" id="username" placeholder="نام کاربری را وارد کنید">
-            </div>
-            <div class="form-group">
-                <label for="password">رمز عبور:</label>
-                <input type="password" id="password" placeholder="رمز عبور را وارد کنید">
-            </div>
-            <button onclick="login()">ورود</button>
+        <div class="header">
+            <h1>🔐 ELOG Submission Dashboard</h1>
+            <p>Automated Data Submission with Proxy Support</p>
         </div>
 
-        <!-- Dashboard -->
-        <div class="dashboard" id="dashboard">
-            <h1>داشبورد ELOG</h1>
-            <div class="user-info">
-                <p>خوش آمدید</p>
-                <p><strong id="displayUsername"></strong></p>
-            </div>
-            
-            <div id="dashboardMessage" class="message"></div>
-
+        <div class="content">
+            <!-- Tabs -->
             <div class="tabs">
-                <button class="tab-button active" onclick="switchTab('submit')">ارسال دستی</button>
-                <button class="tab-button" onclick="switchTab('test')">تست اتصال</button>
-                <button class="tab-button" onclick="switchTab('schedule')">زمان‌بندی</button>
+                <button class="tab-btn active" onclick="switchTab('login')">🔑 Login</button>
+                <button class="tab-btn" onclick="switchTab('submit')">📤 Submit</button>
+                <button class="tab-btn" onclick="switchTab('schedule')">⏰ Schedule</button>
+                <button class="tab-btn" onclick="switchTab('connection')">🔗 Connection</button>
+            </div>
+
+            <!-- Login Tab -->
+            <div id="login" class="tab-content active">
+                <div id="loginStatus" class="status-message"></div>
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter your username" value="R.babaei">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" value="R@46">
+                </div>
+                <button class="btn btn-primary" onclick="login()">Login</button>
             </div>
 
             <!-- Submit Tab -->
-            <div id="submit" class="tab-content active">
+            <div id="submit" class="tab-content">
+                <div id="submitStatus" class="status-message"></div>
                 <div class="form-group">
-                    <label for="title">عنوان:</label>
-                    <input type="text" id="title" placeholder="عنوان را وارد کنید">
-                </div>
-                <div class="form-group">
-                    <label for="description">توضیحات:</label>
-                    <textarea id="description" placeholder="توضیحات را وارد کنید"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="category">دسته‌بندی:</label>
-                    <select id="category">
-                        <option value="">انتخاب کنید</option>
-                        <option value="bug">اشکال</option>
-                        <option value="feature">ویژگی</option>
-                        <option value="improvement">بهبود</option>
+                    <label for="dataType">Data Type</label>
+                    <select id="dataType">
+                        <option value="reading">Reading</option>
+                        <option value="event">Event</option>
+                        <option value="report">Report</option>
                     </select>
                 </div>
-                <button onclick="submitData()">ارسال</button>
-            </div>
-
-            <!-- Test Connection Tab -->
-            <div id="test" class="tab-content">
-                <p style="text-align: center; color: #666; margin-bottom: 20px;">تست اتصال به سرور ELOG</p>
-                <button onclick="testConnection()">تست اتصال</button>
-                <div id="testResult" style="margin-top: 15px; padding: 10px; border-radius: 5px; display: none;"></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="deviceId">Device ID</label>
+                        <input type="text" id="deviceId" placeholder="e.g., DEVICE-001">
+                    </div>
+                    <div class="form-group">
+                        <label for="timestamp">Timestamp</label>
+                        <input type="datetime-local" id="timestamp">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="dataValue">Data Value</label>
+                    <input type="text" id="dataValue" placeholder="Enter value">
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" placeholder="Optional description..."></textarea>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="submitData()">Submit Now</button>
+                    <button class="btn btn-secondary" onclick="clearSubmitForm()">Clear</button>
+                </div>
             </div>
 
             <!-- Schedule Tab -->
             <div id="schedule" class="tab-content">
+                <div id="scheduleStatus" class="status-message"></div>
                 <div class="form-group">
-                    <label for="scheduleTitle">عنوان:</label>
-                    <input type="text" id="scheduleTitle" placeholder="عنوان را وارد کنید">
+                    <label for="scheduleInterval">Interval (minutes)</label>
+                    <input type="number" id="scheduleInterval" min="1" max="1440" value="60" placeholder="60">
                 </div>
                 <div class="form-group">
-                    <label for="scheduleDescription">توضیحات:</label>
-                    <textarea id="scheduleDescription" placeholder="توضیحات را وارد کنید"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="scheduleCategory">دسته‌بندی:</label>
-                    <select id="scheduleCategory">
-                        <option value="">انتخاب کنید</option>
-                        <option value="bug">اشکال</option>
-                        <option value="feature">ویژگی</option>
-                        <option value="improvement">بهبود</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="scheduleTime">زمان ارسال (ساعت:دقیقه):</label>
-                    <input type="text" id="scheduleTime" placeholder="مثال: 14:30">
+                    <label for="scheduleData">Data to Submit (JSON)</label>
+                    <textarea id="scheduleData" placeholder='{"dataType": "reading", "deviceId": "DEVICE-001", "dataValue": "25.5"}'></textarea>
                 </div>
                 <div class="button-group">
-                    <button onclick="scheduleSubmit()">زمان‌بندی</button>
-                    <button onclick="getSchedules()">مشاهده برنامه‌ها</button>
+                    <button class="btn btn-success" onclick="startSchedule()">Start Schedule</button>
+                    <button class="btn btn-secondary" onclick="stopSchedule()">Stop Schedule</button>
                 </div>
-                <div id="schedulesList" style="margin-top: 20px;"></div>
+                <div id="scheduleInfo" class="schedule-info" style="display:none;">
+                    <h4>📋 Active Schedule</h4>
+                    <div id="scheduleList"></div>
+                </div>
             </div>
 
-            <button class="logout-btn" onclick="logout()">خروج</button>
+            <!-- Connection Tab -->
+            <div id="connection" class="tab-content">
+                <div id="connectionStatus" class="status-message"></div>
+                <div class="connection-status">
+                    <div class="status-indicator checking" id="statusIndicator"></div>
+                    <div>
+                        <strong id="statusText">Checking connection...</strong>
+                        <div id="statusDetails" style="font-size: 12px; color: #999;"></div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="testConnection()">Test Connection</button>
+                
+                <div style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 15px;">Proxy Configuration</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="proxyType">Proxy Type</label>
+                            <select id="proxyType">
+                                <option value="socks5">SOCKS5</option>
+                                <option value="http">HTTP</option>
+                                <option value="https">HTTPS</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="proxyIP">Proxy IP</label>
+                            <input type="text" id="proxyIP" value="22.212.197.248" placeholder="IP address">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="proxyPort">Proxy Port</label>
+                            <input type="number" id="proxyPort" value="12334" placeholder="Port">
+                        </div>
+                        <div class="form-group">
+                            <label for="proxyAuth">Username:Password (optional)</label>
+                            <input type="text" id="proxyAuth" placeholder="user:pass">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="updateProxyConfig()">Update Proxy</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Check if user is logged in on page load
-        window.addEventListener('load', function() {
-            checkLoginStatus();
-        });
-
-        function checkLoginStatus() {
-            fetch('/check_login')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.logged_in) {
-                        showDashboard(data.username);
-                    } else {
-                        showLogin();
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
-
-        function showLogin() {
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('dashboard').style.display = 'none';
-        }
-
-        function showDashboard(username) {
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('displayUsername').textContent = username;
-        }
-
-        function login() {
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-
-            if (!username || !password) {
-                showMessage('loginMessage', 'لطفاً نام کاربری و رمز عبور را وارد کنید', 'error');
-                return;
-            }
-
-            fetch('/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username: username,
-                    password: password
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showDashboard(username);
-                } else {
-                    showMessage('loginMessage', data.message || 'خطا در ورود', 'error');
-                }
-            })
-            .catch(error => {
-                showMessage('loginMessage', 'خطای سرور: ' + error.message, 'error');
-            });
-        }
-
-        function logout() {
-            fetch('/logout', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showLogin();
-                        document.getElementById('username').value = '';
-                        document.getElementById('password').value = '';
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
+        const API_BASE = window.location.origin;
 
         function switchTab(tabName) {
             // Hide all tabs
-            const tabs = document.querySelectorAll('.tab-content');
-            tabs.forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
 
-            // Remove active class from all buttons
-            const buttons = document.querySelectorAll('.tab-button');
-            buttons.forEach(button => button.classList.remove('active'));
-
-            // Show selected tab and highlight button
+            // Show selected tab
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
         }
 
-        function submitData() {
-            const title = document.getElementById('title').value.trim();
-            const description = document.getElementById('description').value.trim();
-            const category = document.getElementById('category').value;
-
-            if (!title || !description || !category) {
-                showMessage('dashboardMessage', 'لطفاً تمام فیلدها را پر کنید', 'error');
-                return;
-            }
-
-            showMessage('dashboardMessage', 'در حال ارسال...', 'info');
-
-            fetch('/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    title: title,
-                    description: description,
-                    category: category
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showMessage('dashboardMessage', 'درخواست با موفقیت ارسال شد', 'success');
-                    document.getElementById('title').value = '';
-                    document.getElementById('description').value = '';
-                    document.getElementById('category').value = '';
-                } else {
-                    showMessage('dashboardMessage', data.message || 'خطا در ارسال', 'error');
-                }
-            })
-            .catch(error => {
-                showMessage('dashboardMessage', 'خطای سرور: ' + error.message, 'error');
-            });
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status-message show ${type}`;
+            setTimeout(() => {
+                element.classList.remove('show');
+            }, 5000);
         }
 
-        function testConnection() {
-            const testResultDiv = document.getElementById('testResult');
-            testResultDiv.textContent = 'درحال تست...';
-            testResultDiv.style.display = 'block';
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
 
-            fetch('/test_connection')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        testResultDiv.className = 'message success';
-                        testResultDiv.textContent = '✓ اتصال موفق: ' + data.message;
-                    } else {
-                        testResultDiv.className = 'message error';
-                        testResultDiv.textContent = '✗ خطا: ' + data.message;
-                    }
-                })
-                .catch(error => {
-                    testResultDiv.className = 'message error';
-                    testResultDiv.textContent = '✗ خطای سرور: ' + error.message;
-                });
-        }
-
-        function scheduleSubmit() {
-            const title = document.getElementById('scheduleTitle').value.trim();
-            const description = document.getElementById('scheduleDescription').value.trim();
-            const category = document.getElementById('scheduleCategory').value;
-            const time = document.getElementById('scheduleTime').value.trim();
-
-            if (!title || !description || !category || !time) {
-                showMessage('dashboardMessage', 'لطفاً تمام فیلدها را پر کنید', 'error');
-                return;
-            }
-
-            fetch('/schedule', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application
+            if (!username || !password) {
+                showStatus('loginStatus', '❌ Please enter username and password', 
