@@ -1,101 +1,256 @@
-from flask import Flask, render_template, request, jsonify
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.ssl_ import create_urllib3_context
-import os
-from dotenv import load_dotenv
+from flask import Flask, render_template, request, jsonify, session
 from apscheduler.schedulers.background import BackgroundScheduler
-import socks
-import socket
+import requests
+from dotenv import load_dotenv
+import os
+from datetime import datetime
 
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-here')
+
 scheduler = BackgroundScheduler()
 scheduler.start()
 
-user_data = {
-    'api_url': 'https://elog.pedc.ir/api/submit',
-    'username': 'R.babaei',
-    'password': 'R@46',
-    'parameters': {},
-    'description': '',
-    'job_id': None
-}
+# ذخیره وضعیت هر کاربر
+user_sessions = {}
 
-# ✅ SOCKS5 تنظیمات
-def setup_socks_proxy():
-    """SOCKS5 را تنظیم کن"""
-    socks.set_default_proxy(
-        socks.SOCKS5,
-        "22.212.197.248",  # IP
-        12334,              # Port
-        rdns=True
-    )
-    socket.socket = socks.socksocket
+TARGET_URL = 'https://elog.pedc.ir/api/submit'
 
-def submit_to_website():
+def submit_data(username, password):
+    """ارسال داده با اطلاعات کاربر"""
     try:
-        # ✅ SOCKS5 را فعال کن
-        setup_socks_proxy()
-        
-        # ✅ درخواست ارسال کن
         payload = {
-            'username': user_data['username'],
-            'password': user_data['password'],
-            'description': user_data['description'],
-            **user_data.get('parameters', {})
+            'username': username,
+            'password': password,
+            'data': 'test_data'
         }
         
-        headers = {'Content-Type': 'application/json'}
-        
         response = requests.post(
-            user_data['api_url'],
+            TARGET_URL,
             json=payload,
-            headers=headers,
-            timeout=15,
-            verify=False  # SSL را نادیده بگیر
+            verify=False,
+            timeout=10
         )
         
-        print(f"✅ موفق: {response.status_code}")
-        print(response.json())
-        
+        if response.status_code == 200:
+            return {
+                'success': True,
+                'message': f'✅ ارسال موفق: {response.status_code}',
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+        else:
+            return {
+                'success': False,
+                'message': f'⚠️ خطا: {response.status_code}',
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            
     except Exception as e:
-        print(f"❌ خطا: {e}")
+        return {
+            'success': False,
+            'message': f'❌ خطا: {str(e)}',
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
 
 @app.route('/')
 def index():
+    """صفحه ورود"""
     return render_template('index.html')
 
-@app.route('/api/config', methods=['POST'])
-def save_config():
-    global user_data
-    data = request.json
-    user_data['api_url'] = data.get('api_url', 'https://elog.pedc.ir/api/submit')
-    user_data['username'] = data.get('username', 'R.babaei')
-    user_data['password'] = data.get('password', 'R@46')
-    user_data['description'] = data.get('description', '')
-    user_data['parameters'] = data.get('parameters', {})
-    return jsonify({'status': 'success', 'message': '✅ ذخیره شد'})
+@app.route('/api/login', methods=['POST'])
+def login():
+    """ورود کاربر"""
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    
+    if not username or not password:
+        return jsonify({
+            'success': False,
+            'message': 'نام کاربری و رمز عبور الزامی است'
+        }), 400
+    
+    # ذخیره در session
+    session['username'] = username
+    session['password'] = password
+    session['logged_in'] = True
+    
+    return jsonify({
+        'success': True,
+        'message': f'خوش آمدید {username}!'
+    })
 
-@app.route('/api/start', methods=['POST'])
-def start_automation():
-    global user_data
-    if user_data['job_id']:
-        return jsonify({'status': 'error', 'message': '⚠️ در حال اجرا'}), 400
-    job = scheduler.add_job(submit_to_website, 'interval', hours=1)
-    user_data['job_id'] = job.id
-    submit_to_website()
-    return jsonify({'status': 'success', 'message': '▶️ شروع شد'})
+@app.route('/api/dashboard')
+def dashboard():
+    """بررسی ورود"""
+    if not session.get('logged_in'):
+        return jsonify({
+            'success': False,
+            'message': 'ابتدا وارد شوید'
+        }), 401
+    
+    username = session.get('username')
+    
+    # دریافت وضعیت کاربر
+    user_data = user_sessions.get(username, {
+        'enabled': False,
+        'last_run': None,
+        'interval': 60,
+        'message': 'خودکارسازی غیرفعال است'
+    })
+    
+    return jsonify({
+        'success': True,
+        'username': username,
+        'status': user_data
+    })
 
-@app.route('/api/stop', methods=['POST'])
-def stop_automation():
-    global user_data
-    if user_data['job_id']:
-        scheduler.remove_job(user_data['job_id'])
-        user_data['job_id'] = None
-    return jsonify({'status': 'success', 'message': '⏹️ متوقف'})
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    """دریافت وضعیت"""
+    if not session.get('logged_in'):
+        return jsonify({'success': False}), 401
+    
+    username = session.get('username')
+    status = user_sessions.get(username, {
+        'enabled': False,
+        'last_run': None,
+        'message': 'خودکارسازی غیرفعال است'
+    })
+    
+    return jsonify(status)
+
+@app.route('/api/submit', methods=['POST'])
+def submit_manual():
+    """ارسال دستی"""
+    if not session.get('logged_in'):
+        return jsonify({'success': False, 'message': 'ابتدا وارد شوید'}), 401
+    
+    username = session.get('username')
+    password = session.get('password')
+    
+    result = submit_data(username, password)
+    
+    # ذخیره نتیجه
+    if username not in user_sessions:
+        user_sessions[username] = {}
+    
+    user_sessions[username]['last_run'] = result['timestamp']
+    user_sessions[username]['message'] = result['message']
+    
+    return jsonify({
+        'success': result['success'],
+        'message': result['message'],
+        'status': user_sessions[username]
+    })
+
+@app.route('/api/schedule', methods=['POST'])
+def set_schedule():
+    """تنظیم خودکارسازی"""
+    if not session.get('logged_in'):
+        return jsonify({'success': False}), 401
+    
+    data = request.get_json()
+    username = session.get('username')
+    password = session.get('password')
+    interval = data.get('interval', 60)
+    enabled = data.get('enabled', False)
+    
+    if username not in user_sessions:
+        user_sessions[username] = {}
+    
+    user_sessions[username]['enabled'] = enabled
+    user_sessions[username]['interval'] = interval
+    
+    if enabled:
+        # حذف job قدیمی اگر وجود دارد
+        job_id = f'job_{username}'
+        try:
+            scheduler.remove_job(job_id)
+        except:
+            pass
+        
+        # اضافه کردن job جدید
+        def scheduled_submit():
+            result = submit_data(username, password)
+            user_sessions[username]['last_run'] = result['timestamp']
+            user_sessions[username]['message'] = result['message']
+        
+        scheduler.add_job(
+            scheduled_submit,
+            'interval',
+            minutes=interval,
+            id=job_id
+        )
+        
+        user_sessions[username]['message'] = f'✅ خودکار هر {interval} دقیقه'
+    else:
+        # حذف job
+        job_id = f'job_{username}'
+        try:
+            scheduler.remove_job(job_id)
+        except:
+            pass
+        
+        user_sessions[username]['message'] = 'خودکارسازی غیرفعال است'
+    
+    return jsonify({
+        'success': True,
+        'status': user_sessions[username]
+    })
+
+@app.route('/api/test', methods=['POST'])
+def test_connection():
+    """تست اتصال"""
+    if not session.get('logged_in'):
+        return jsonify({'success': False}), 401
+    
+    username = session.get('username')
+    password = session.get('password')
+    
+    try:
+        # تست ورود
+        payload = {
+            'username': username,
+            'password': password
+        }
+        
+        response = requests.post(
+            TARGET_URL,
+            json=payload,
+            verify=False,
+            timeout=5
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'✅ اتصال موفق! (کد: {response.status_code})',
+            'status_code': response.status_code
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'❌ خطا در اتصال: {str(e)}'
+        }), 500
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    """خروج"""
+    username = session.get('username')
+    
+    # حذف job
+    if username:
+        job_id = f'job_{username}'
+        try:
+            scheduler.remove_job(job_id)
+        except:
+            pass
+    
+    session.clear()
+    
+    return jsonify({'success': True, 'message': 'با موفقیت خارج شدید'})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=False, host='0.0.0.0', port=5000)
