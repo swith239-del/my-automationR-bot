@@ -345,7 +345,7 @@
     <div class="container">
         <div class="header">
             <h1>🔐 ELOG Submission Dashboard</h1>
-            <p>Automated Data Submission with Proxy Support</p>
+            <p>Automated Data Submission</p>
         </div>
 
         <div class="content">
@@ -354,7 +354,6 @@
                 <button class="tab-btn active" onclick="switchTab('login')">🔑 Login</button>
                 <button class="tab-btn" onclick="switchTab('submit')">📤 Submit</button>
                 <button class="tab-btn" onclick="switchTab('schedule')">⏰ Schedule</button>
-                <button class="tab-btn" onclick="switchTab('connection')">🔗 Connection</button>
             </div>
 
             <!-- Login Tab -->
@@ -362,11 +361,11 @@
                 <div id="loginStatus" class="status-message"></div>
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" placeholder="Enter your username" value="R.babaei">
+                    <input type="text" id="username" placeholder="Enter your username">
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" placeholder="Enter your password" value="R@46">
+                    <input type="password" id="password" placeholder="Enter your password">
                 </div>
                 <button class="btn btn-primary" onclick="login()">Login</button>
             </div>
@@ -426,48 +425,6 @@
                     <div id="scheduleList"></div>
                 </div>
             </div>
-
-            <!-- Connection Tab -->
-            <div id="connection" class="tab-content">
-                <div id="connectionStatus" class="status-message"></div>
-                <div class="connection-status">
-                    <div class="status-indicator checking" id="statusIndicator"></div>
-                    <div>
-                        <strong id="statusText">Checking connection...</strong>
-                        <div id="statusDetails" style="font-size: 12px; color: #999;"></div>
-                    </div>
-                </div>
-                <button class="btn btn-primary" onclick="testConnection()">Test Connection</button>
-                
-                <div style="margin-top: 30px;">
-                    <h3 style="margin-bottom: 15px;">Proxy Configuration</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="proxyType">Proxy Type</label>
-                            <select id="proxyType">
-                                <option value="socks5">SOCKS5</option>
-                                <option value="http">HTTP</option>
-                                <option value="https">HTTPS</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="proxyIP">Proxy IP</label>
-                            <input type="text" id="proxyIP" value="22.212.197.248" placeholder="IP address">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="proxyPort">Proxy Port</label>
-                            <input type="number" id="proxyPort" value="12334" placeholder="Port">
-                        </div>
-                        <div class="form-group">
-                            <label for="proxyAuth">Username:Password (optional)</label>
-                            <input type="text" id="proxyAuth" placeholder="user:pass">
-                        </div>
-                    </div>
-                    <button class="btn btn-primary" onclick="updateProxyConfig()">Update Proxy</button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -475,7 +432,6 @@
         const API_BASE = window.location.origin;
 
         function switchTab(tabName) {
-            // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -483,7 +439,6 @@
                 btn.classList.remove('active');
             });
 
-            // Show selected tab
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
         }
@@ -498,8 +453,74 @@
         }
 
         function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
 
             if (!username || !password) {
-                showStatus('loginStatus', '❌ Please enter username and password',
+                showStatus('loginStatus', '❌ Please enter username and password', 'error');
+                return;
+            }
+
+            showStatus('loginStatus', 'Logging in...', 'loading');
+
+            fetch(`${API_BASE}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus('loginStatus', '✅ ' + data.message, 'success');
+                    setTimeout(() => switchTab('submit'), 1000);
+                } else {
+                    showStatus('loginStatus', '❌ ' + data.message, 'error');
+                }
+            })
+            .catch(err => {
+                showStatus('loginStatus', '❌ Error: ' + err.message, 'error');
+            });
+        }
+
+        function submitData() {
+            const dataType = document.getElementById('dataType').value;
+            const deviceId = document.getElementById('deviceId').value.trim();
+            const timestamp = document.getElementById('timestamp').value;
+            const dataValue = document.getElementById('dataValue').value.trim();
+            const description = document.getElementById('description').value.trim();
+
+            if (!deviceId || !dataValue) {
+                showStatus('submitStatus', '❌ Please fill in required fields', 'error');
+                return;
+            }
+
+            const data = {
+                dataType,
+                deviceId,
+                dataValue,
+                description
+            };
+
+            if (timestamp) data.timestamp = timestamp;
+
+            showStatus('submitStatus', 'Submitting...', 'loading');
+
+            fetch(`${API_BASE}/api/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(d => {
+                showStatus('submitStatus', (d.success ? '✅ ' : '❌ ') + d.message, d.success ? 'success' : 'error');
+            })
+            .catch(err => {
+                showStatus('submitStatus', '❌ Error: ' + err.message, 'error');
+            });
+        }
+
+        function clearSubmitForm() {
+            document.getElementById('dataType').value = 'reading';
+            document.getElementById('deviceId').value = '';
+            document.getElementById('timestamp').value = '';
+            document.
